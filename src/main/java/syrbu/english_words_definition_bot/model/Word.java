@@ -1,4 +1,4 @@
-package interview;
+package syrbu.english_words_definition_bot.model;
 
 import java.util.List;
 

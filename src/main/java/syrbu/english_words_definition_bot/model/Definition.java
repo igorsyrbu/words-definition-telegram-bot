@@ -1,4 +1,4 @@
-package interview;
+package syrbu.english_words_definition_bot.model;
 
 public class Definition {
     private String definition;

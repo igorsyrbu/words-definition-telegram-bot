@@ -1,4 +1,4 @@
-package syrbu.english_words_definition_bot;
+package syrbu.english_words_definition_bot.service;
 
 import org.apache.commons.io.IOUtils;
 import org.jsoup.Jsoup;
@@ -13,19 +13,20 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
-works not perfectly, because of Jsoup parsing restrictions
-use WordsApi version based on JSON responses {@link syrbu.english_words_definition_bot.WordsApi}
+Works not perfectly, because of Jsoup parsing restrictions
+Use WordsApi version based on JSON responses {@link WordsApi}
  */
 
+@Deprecated
 public class CambridgeDictionaryHtmlParser {
-    private final static String noResultsString = "The most popular dictionary and thesaurus Meanings & definitions of words in English with examples, synonyms, pronunciations and translations";
-    private final static String cambridgeDictionaryEntryUrl = "https://dictionary.cambridge.org/dictionary/english/";
+    private final static String NO_RESULTS_STRING = "The most popular dictionary and thesaurus Meanings & definitions of words in English with examples, synonyms, pronunciations and translations";
+    private final static String CAMBRIDGE_DICTIONARY_ENTRY_POINT = "https://dictionary.cambridge.org/dictionary/english/";
 
     public static List<String> getDefinitions(String word) {
         List<String> resultList = new ArrayList<>();
         String html = null;
         try {
-            html = IOUtils.toString(new URL(cambridgeDictionaryEntryUrl + word), StandardCharsets.UTF_8);
+            html = IOUtils.toString(new URL(CAMBRIDGE_DICTIONARY_ENTRY_POINT + word), StandardCharsets.UTF_8);
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -47,7 +48,7 @@ public class CambridgeDictionaryHtmlParser {
                     if (s.trim().length() > 1) {
                         s = s.replace(":", "");
                         s = s.replace(".", "");
-                        if (s.equals(noResultsString)) {
+                        if (s.equals(NO_RESULTS_STRING)) {
                             resultList.add("Sorry, but I can't recognize the word");
                             break;
                         } else {

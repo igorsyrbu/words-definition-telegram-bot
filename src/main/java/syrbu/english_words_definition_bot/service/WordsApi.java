@@ -1,39 +1,25 @@
-package syrbu.english_words_definition_bot;
+package syrbu.english_words_definition_bot.service;
 
 
 import com.google.gson.Gson;
 import com.mashape.unirest.http.HttpResponse;
 import com.mashape.unirest.http.Unirest;
 import com.mashape.unirest.http.exceptions.UnirestException;
+import syrbu.english_words_definition_bot.model.Definition;
+import syrbu.english_words_definition_bot.model.Word;
 
-import java.io.IOException;
+import java.util.*;
+
+import static syrbu.english_words_definition_bot.service.ApiConstants.*;
 
 public class WordsApi {
-
-    private static final String[] PARTS_OF_SPEECH = {
-            "noun",
-            "pronoun",
-            "adjective",
-            "verb",
-            "adverb",
-            "preposition",
-            "conjunction",
-            "interjection",
-            null
-    };
-
-    public static void main(String[] args) throws IOException, UnirestException {
-        String word = "man";
-        System.out.println(getDefinitions(word));
-    }
-
     public static List<String> getDefinitions(String wordToSeek) {
         List<String> respond = new ArrayList<>();
         HttpResponse<String> response;
         try {
-            response = Unirest.get(String.format("https://wordsapiv1.p.rapidapi.com/words/%s/definitions", wordToSeek))
-                    .header("x-rapidapi-host", "wordsapiv1.p.rapidapi.com")
-                    .header("x-rapidapi-key", "9355a85c0dmsh267c1d12800ccdep1c2226jsn44c911ef8012")
+            response = Unirest.get(String.format(WORDS_API_ENTRY_POINT, wordToSeek))
+                    .header("x-rapidapi-host", RAPID_API_HOST)
+                    .header("x-rapidapi-key", RAPID_API_KEY)
                     .asString();
             String body = response.getBody();
             Gson gson = new Gson();
@@ -41,8 +27,8 @@ public class WordsApi {
             word = gson.fromJson(body, Word.class);
 
             List<Definition> definitions = word.getDefinitions();
-            if (definitions == null) {
-                respond.add("Sorry, but I can't recognize the word");
+            if (definitions == null || definitions.size() == 0) {
+                respond.add(INVALID_WORD);
             } else {
                 List<String> sortedPartsOfSpeech = getSortedPartsOfSpeechOfCurrentWord(definitions);
                 respond = addDefinitions(sortedPartsOfSpeech, definitions);
@@ -50,7 +36,7 @@ public class WordsApi {
 
         } catch (UnirestException e) {
             e.printStackTrace();
-            respond.add("Whoops, there is something wrong...try a bit later");
+            respond.add(API_ERROR_MESSAGE);
         }
         return respond;
     }
@@ -70,14 +56,14 @@ public class WordsApi {
         List<String> result = new ArrayList<>();
         for (String partOfSpeech : currentPartsOfSpeech) {
             if (partOfSpeech == null) {
-                result.add("other");
+                result.add(String.format("*%s*", "other"));
                 for (Definition definition : definitions) {
                     if (definition.getPartOfSpeech() == null) {
                         result.add("- " + definition.getDefinition());
                     }
                 }
             } else {
-                result.add(partOfSpeech);
+                result.add(String.format("*%s*", partOfSpeech));
                 for (Definition definition : definitions) {
                     if (definition.getPartOfSpeech() != null && definition.getPartOfSpeech().equals(partOfSpeech)) {
                         result.add("- " + definition.getDefinition());
@@ -87,5 +73,4 @@ public class WordsApi {
         }
         return result;
     }
-
 }
