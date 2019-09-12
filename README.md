@@ -1,7 +1,7 @@
 # [Words definition bot](https://telegram.me/english_words_definition_bot)
 
 # How does it handle user queries?
-The bot provides a definition of the requested word by parsing HTML page of Cambridge Dictionary with jsoap library
+The bot provides a definition of the requested word by parsing HTML page of Cambridge Dictionary with jsoap library and Words API
 
 # Technologies used
 
@@ -9,6 +9,8 @@ The bot provides a definition of the requested word by parsing HTML page of Camb
 * Spring Boot Framework
 * Apache Commons IO
 * Java HTML Parser jsoup
+* Gson
+* Unirest
 
 
 # Deploying
