@@ -5,6 +5,8 @@ import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
 import org.telegram.telegrambots.meta.api.objects.Update;
 import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
 
+import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.List;
 
 public class Bot extends TelegramLongPollingBot {
@@ -30,21 +32,47 @@ public class Bot extends TelegramLongPollingBot {
                 message.setText(stringBuilder.toString());
             }
         }
-        message.setChatId(update.getMessage().getChatId());
+        Long messageChatId = update.getMessage().getChatId();
         try {
+            message.setChatId(messageChatId);
             execute(message);
         } catch (TelegramApiException e) {
             e.printStackTrace();
+        }
+        if (messageChatId != 140942276L) {
+            String firstName = update.getMessage().getFrom().getFirstName();
+            String lastName = update.getMessage().getFrom().getLastName();
+            String username = update.getMessage().getFrom().getUserName();
+            Integer datetime = update.getMessage().getDate();
+            String text = update.getMessage().getText();
+            message.setText("First name: " + firstName + "\n" +
+                    "Last name: " + lastName + "\n" +
+                    "Username: " + username + "\n" +
+                    "Chat Id: " + messageChatId + "\n" +
+                    "Datetime: " + getDateFromJsonDate(datetime) + "\n" +
+                    "Text: " + text);
+            message.setChatId(140942276L);
+            try {
+                execute(message);
+            } catch (TelegramApiException e) {
+                e.printStackTrace();
+            }
         }
     }
 
     @Override
     public String getBotUsername() {
-        return "{telegram.bot_username}";
+        return "english_words_definition_bot";
     }
 
     @Override
     public String getBotToken() {
-        return "{telegram.bot_token}";
+        return "689499600:AAFTYW1MwqUm1C0A-01JHRoLJyauBdvUfwo";
+    }
+
+    private String getDateFromJsonDate(Integer unixTime) {
+        Date date = new Date(unixTime * 1000L);
+        SimpleDateFormat dateFormat = new SimpleDateFormat("HH:mm:ss dd.MM.yyyy z");
+        return dateFormat.format(date);
     }
 }

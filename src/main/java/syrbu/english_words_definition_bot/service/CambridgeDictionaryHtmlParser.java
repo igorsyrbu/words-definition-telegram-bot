@@ -12,6 +12,11 @@ import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+works not perfectly, because of Jsoup parsing restrictions
+use WordsApi version based on JSON responses {@link syrbu.english_words_definition_bot.WordsApi}
+ */
+
 public class CambridgeDictionaryHtmlParser {
     private final static String noResultsString = "The most popular dictionary and thesaurus Meanings & definitions of words in English with examples, synonyms, pronunciations and translations";
     private final static String cambridgeDictionaryEntryUrl = "https://dictionary.cambridge.org/dictionary/english/";
@@ -55,4 +60,5 @@ public class CambridgeDictionaryHtmlParser {
         }
         return resultList;
     }
+
 }
