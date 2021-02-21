@@ -70,6 +70,7 @@ public class BotService {
                 String fileName = getMessage(update).toLowerCase();
                 textToSpeechService.synthesize(fileName).ifPresent(inputStream -> telegramBot.sendVoice(chatId, inputStream, fileName));
             }
+            InMemoryUserState.updateState(chatId, BotCommand.DEFINITION);
             buildNotification(adminChatId, update, NotificationType.DEFINITION).ifPresent(telegramBot::sendMessage);
         }
     }
