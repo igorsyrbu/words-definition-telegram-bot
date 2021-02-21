@@ -27,11 +27,12 @@ public class TelegramBot extends TelegramLongPollingBot {
 
     @Override
     public void onUpdateReceived(Update update) {
-        if (isTextMessage(update)) {
+        if (isTextMessage(update) && isPrivateChat(update)) {
             BotUpdatesQueue.add(update);
             log.info("Added to queue. Update: {}", getAsJsonString(update));
             log.info("Queue size: {}/{}", BotUpdatesQueue.getSize(), BotUpdatesQueue.getCapacity());
-            buildNotificationMessage(telegramProperties.getAdminChatId(), update).ifPresent(this::sendMessage);
+        } else if (isTextMessage(update) && isGroupChat(update)) {
+            log.warn("Non-private chat update: {}", getAsJsonString(update));
         } else {
             log.warn("Non-text update: {}", getAsJsonString(update));
         }

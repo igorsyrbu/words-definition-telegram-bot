@@ -6,6 +6,7 @@ import org.telegram.telegrambots.meta.api.objects.InputFile;
 import org.telegram.telegrambots.meta.api.objects.Update;
 import org.telegram.telegrambots.meta.api.objects.User;
 import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
+import syrbu.english_words_definition_bot.constant.bot.NotificationType;
 import syrbu.english_words_definition_bot.model.telegram.SendMessageWrapper;
 import syrbu.english_words_definition_bot.model.telegram.SendVoiceWrapper;
 
@@ -22,9 +23,12 @@ import static syrbu.english_words_definition_bot.util.DateUtil.getFormattedUTCDa
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class BotUtil {
 
+    private static final String NEW_LINE = "\n";
+    private static final String MESSAGE_PARSE_MODE = "html";
+    private static final Integer MESSAGE_MAX_LENGTH = 4096;
+
     public static List<SendMessageWrapper> buildSendMessageWithTextSplit(String text, String recipient) {
-        int maxMessageLength = 4096;
-        return splitTextByNewLineAndSize(text, maxMessageLength).stream()
+        return splitTextByNewLineAndSize(text, MESSAGE_MAX_LENGTH).stream()
                 .map(messageChunk -> buildSendMessage(recipient, messageChunk))
                 .collect(Collectors.toList());
     }
@@ -34,7 +38,7 @@ public class BotUtil {
         sendMessage.setChatId(recipient);
         sendMessage.setText(text);
         sendMessage.enableMarkdownV2(true);
-        sendMessage.setParseMode("html");
+        sendMessage.setParseMode(MESSAGE_PARSE_MODE);
         return sendMessage;
     }
 
@@ -45,18 +49,10 @@ public class BotUtil {
         return sendAudio;
     }
 
-    public static Optional<SendMessageWrapper> buildNotificationMessage(String recipient, Update update) {
+    public static Optional<SendMessageWrapper> buildNotification(String recipient, Update update, NotificationType type) {
         String chatId = getChatId(update);
         if (!chatId.equals(recipient)) {
-            String text = getMessage(update);
-            String messageText = "First name: " + getFirstName(update) + "\n" +
-                    "Last name: " + getLastName(update) + "\n" +
-                    "Username: " + getUsername(update) + "\n" +
-                    "Chat id: " + getChatId(update) + "\n" +
-                    "Language code: " + getLanguageCode(update) + "\n" +
-                    "Is bot: " + isBot(update) + "\n" +
-                    "Datetime: " + getFormattedUTCDate(getMessageDate(update)) + "\n" +
-                    "Text: " + text;
+            String messageText = "<b>" + type.getTitle() + "</b>" + NEW_LINE + NEW_LINE + buildNotificationText(update);
             return Optional.of(buildSendMessage(recipient, messageText));
         } else {
             return Optional.empty();
@@ -64,18 +60,34 @@ public class BotUtil {
     }
 
     public static SendMessageWrapper buildErrorNotificationMessage(String recipient, String messageJson, TelegramApiException e) {
-        String text = "Error notification\n" +
-                "LocalDateTime: " + DateUtil.getFormattedUTCDate(LocalDateTime.now()) + "\n" +
-                "Exception message: " + e.getLocalizedMessage() + "\n" +
-                "SendMessage: " + messageJson + "\n";
+        String text = buildErrorNotificationText(messageJson, e);
         SendMessageWrapper sendMessage = buildSendMessage(recipient, text);
         sendMessage.setError(true);
         return sendMessage;
     }
 
+    private static String buildNotificationText(Update update) {
+        String text = getMessage(update);
+        return "First name: " + getFirstName(update) + NEW_LINE +
+                "Last name: " + getLastName(update) + NEW_LINE +
+                "Username: " + getUsername(update) + NEW_LINE +
+                "Chat id: " + getChatId(update) + NEW_LINE +
+                "Language code: " + getLanguageCode(update) + NEW_LINE +
+                "Is bot: " + isBot(update) + NEW_LINE +
+                "Datetime: " + getFormattedUTCDate(getMessageDate(update)) + NEW_LINE +
+                "Text: " + text;
+    }
+
+    private static String buildErrorNotificationText(String messageJson, TelegramApiException e) {
+        return "Error notification" + NEW_LINE +
+                "LocalDateTime: " + DateUtil.getFormattedUTCDate(LocalDateTime.now()) + NEW_LINE +
+                "Exception message: " + e.getLocalizedMessage() + NEW_LINE +
+                "SendMessage: " + messageJson + NEW_LINE;
+    }
+
     private static List<String> splitTextByNewLineAndSize(String text, int size) {
         List<String> result = new ArrayList<>();
-        String[] split = text.split("\n");
+        String[] split = text.split(NEW_LINE);
         StringBuilder stringBuilder = new StringBuilder();
         for (String str : split) {
             if (str.length() > size) {
@@ -87,7 +99,7 @@ public class BotUtil {
                     stringBuilder = new StringBuilder();
                 }
                 stringBuilder.append(str);
-                stringBuilder.append("\n");
+                stringBuilder.append(NEW_LINE);
             }
         }
         result.add(stringBuilder.toString());
@@ -106,6 +118,16 @@ public class BotUtil {
         return Objects.nonNull(update) &&
                 Objects.nonNull(update.getMessage()) &&
                 Objects.nonNull(update.getMessage().getText());
+    }
+
+    public static boolean isPrivateChat(Update update) {
+        return update.getMessage().isUserMessage();
+    }
+
+    public static boolean isGroupChat(Update update) {
+        return update.getMessage().isGroupMessage() ||
+                update.getMessage().isSuperGroupMessage() ||
+                update.getMessage().isChannelMessage();
     }
 
     public static boolean isBot(Update update) {

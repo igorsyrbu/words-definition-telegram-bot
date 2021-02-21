@@ -1,4 +1,4 @@
-package syrbu.english_words_definition_bot.aws.config;
+package syrbu.english_words_definition_bot.config;
 
 import com.amazonaws.auth.*;
 import com.amazonaws.services.polly.AmazonPolly;
@@ -8,6 +8,7 @@ import com.amazonaws.services.polly.model.DescribeVoicesRequest;
 import com.amazonaws.services.polly.model.Voice;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import syrbu.english_words_definition_bot.property.AwsPollyProperties;
@@ -15,6 +16,7 @@ import syrbu.english_words_definition_bot.property.AwsPollyProperties;
 @Log4j2
 @Configuration
 @RequiredArgsConstructor
+@ConditionalOnProperty(prefix = "telegram.bot", name = "speech-to-text", havingValue = "aws")
 public class AmazonPollyConfiguration {
 
     private final AwsPollyProperties awsPollyProperties;

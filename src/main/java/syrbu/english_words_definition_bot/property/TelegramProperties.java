@@ -13,4 +13,5 @@ public class TelegramProperties {
     private String username;
     private String token;
     private String adminChatId;
+    private String speechToText;
 }
