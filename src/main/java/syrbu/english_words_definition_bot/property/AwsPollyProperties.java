@@ -14,5 +14,5 @@ public class AwsPollyProperties {
     private String secretKey;
     private String region;
     private String voiceName;
-    private boolean isIam;
+    private boolean iam;
 }
