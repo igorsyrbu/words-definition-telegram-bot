@@ -9,6 +9,7 @@ import org.springframework.stereotype.Component;
 import org.telegram.telegrambots.bots.TelegramLongPollingBot;
 import org.telegram.telegrambots.meta.api.objects.Update;
 import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
+import org.telegram.telegrambots.meta.exceptions.TelegramApiRequestException;
 import syrbu.english_words_definition_bot.model.telegram.SendMessageWrapper;
 import syrbu.english_words_definition_bot.model.telegram.SendVoiceWrapper;
 import syrbu.english_words_definition_bot.property.TelegramProperties;
@@ -60,7 +61,7 @@ public class TelegramBot extends TelegramLongPollingBot {
         try {
             execute(method);
         } catch (TelegramApiException e) {
-            log.error(e.getLocalizedMessage(), e);
+            logError(e);
             sendErrorNotification(method, e);
         }
     }
@@ -69,8 +70,7 @@ public class TelegramBot extends TelegramLongPollingBot {
         try {
             execute(method);
         } catch (TelegramApiException e) {
-            log.error(e.getLocalizedMessage(), e);
-            sendErrorNotification(method, e);
+            logError(e);
         }
     }
 
@@ -78,7 +78,16 @@ public class TelegramBot extends TelegramLongPollingBot {
         try {
             execute(buildErrorNotificationMessage(telegramProperties.getAdminChatId(), getAsJsonString(object), exception));
         } catch (TelegramApiException e) {
-            log.error(e.getLocalizedMessage(), e);
+            logError(e);
+        }
+    }
+
+    private void logError(TelegramApiException exception) {
+        if (exception instanceof TelegramApiRequestException) {
+            TelegramApiRequestException apiException = (TelegramApiRequestException) exception;
+            log.error(apiException.getApiResponse(), apiException);
+        } else {
+            log.error(exception.getLocalizedMessage(), exception);
         }
     }
 

@@ -6,6 +6,7 @@ import org.telegram.telegrambots.meta.api.objects.InputFile;
 import org.telegram.telegrambots.meta.api.objects.Update;
 import org.telegram.telegrambots.meta.api.objects.User;
 import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
+import org.telegram.telegrambots.meta.exceptions.TelegramApiRequestException;
 import syrbu.english_words_definition_bot.constant.bot.NotificationType;
 import syrbu.english_words_definition_bot.model.telegram.SendMessageWrapper;
 import syrbu.english_words_definition_bot.model.telegram.SendVoiceWrapper;
@@ -60,7 +61,7 @@ public class BotUtil {
     }
 
     public static SendMessageWrapper buildErrorNotificationMessage(String recipient, String messageJson, TelegramApiException e) {
-        String text = buildErrorNotificationText(messageJson, e);
+        String text = "<b>" + NotificationType.ERROR.getTitle() + "</b>" + NEW_LINE + NEW_LINE + buildErrorNotificationText(messageJson, e);
         SendMessageWrapper sendMessage = buildSendMessage(recipient, text);
         sendMessage.setError(true);
         return sendMessage;
@@ -79,8 +80,23 @@ public class BotUtil {
     }
 
     private static String buildErrorNotificationText(String messageJson, TelegramApiException e) {
-        return "Error notification" + NEW_LINE +
-                "LocalDateTime: " + DateUtil.getFormattedUTCDate(LocalDateTime.now()) + NEW_LINE +
+        if (e instanceof TelegramApiRequestException) {
+            return buildApiRequestErrorNotification(messageJson, (TelegramApiRequestException) e);
+        } else {
+            return buildSimpleErrorNotificationText(messageJson, e);
+        }
+    }
+
+    private static String buildSimpleErrorNotificationText(String messageJson, TelegramApiException e) {
+        return "LocalDateTime: " + DateUtil.getFormattedUTCDate(LocalDateTime.now()) + NEW_LINE +
+                "Exception message: " + e.getLocalizedMessage() + NEW_LINE +
+                "SendMessage: " + messageJson + NEW_LINE;
+    }
+
+    private static String buildApiRequestErrorNotification(String messageJson, TelegramApiRequestException e) {
+        return "LocalDateTime: " + DateUtil.getFormattedUTCDate(LocalDateTime.now()) + NEW_LINE +
+                "Status code: " + e.getErrorCode() + NEW_LINE +
+                "Api response: " + e.getApiResponse() + NEW_LINE +
                 "Exception message: " + e.getLocalizedMessage() + NEW_LINE +
                 "SendMessage: " + messageJson + NEW_LINE;
     }
