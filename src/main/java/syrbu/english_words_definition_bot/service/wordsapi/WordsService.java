@@ -6,76 +6,77 @@ import org.apache.logging.log4j.util.Strings;
 import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
 import syrbu.english_words_definition_bot.constant.wordsapi.PartOfSpeech;
-import syrbu.english_words_definition_bot.model.wordapi.WordApiDefinition;
+import syrbu.english_words_definition_bot.model.wordapi.Result;
 import syrbu.english_words_definition_bot.model.wordapi.WordApiTemplate;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 
 import static syrbu.english_words_definition_bot.constant.bot.BotMessage.API_ERROR_MESSAGE;
 import static syrbu.english_words_definition_bot.constant.bot.BotMessage.INVALID_WORD;
 import static syrbu.english_words_definition_bot.constant.wordsapi.PartOfSpeech.OTHER;
-import static syrbu.english_words_definition_bot.constant.wordsapi.WordsApiConstant.*;
+import static syrbu.english_words_definition_bot.constant.wordsapi.WordsApiConstant.DEFINITION_ENDPOINT;
 
 @Service
 @RequiredArgsConstructor
 public class WordsService {
 
     private static final String NEXT_LINE = "\n";
+    private static final String SYNONYMS_TITLE = "Synonyms";
+    private static final String EXAMPLES_TITLE = "Examples";
+
     private final WordsApiService wordsApiService;
 
     public String getFormattedMessage(String text) {
-        String definition = getFormattedDefinitions(text);
-        if (!isResponseValid(definition)) {
-            return definition;
-        } else {
-            String synonyms = getFormattedSynonyms(text);
-            String examples = getFormattedExamples(text);
-            return definition + NEXT_LINE + synonyms + NEXT_LINE + examples;
-        }
-    }
-
-    private String getFormattedDefinitions(String text) {
         return wordsApiService.executeRequest(DEFINITION_ENDPOINT, text).map(response -> {
             if (CollectionUtils.isEmpty(response.getResults())) {
                 return INVALID_WORD;
             } else {
-                List<WordApiDefinition> definitions = response.getResults();
-                List<String> partsOfSpeech = getPartsOfSpeech(definitions);
-                return getFormatted(getFormattedDefinitions(partsOfSpeech, definitions));
+                List<Result> results = fillMissingPartOfSpeech(response.getResults());
+                List<String> partsOfSpeech = getPartsOfSpeech(results);
+                String definitions = getFormattedDefinitions(buildDefinitionsTemplates(partsOfSpeech, results));
+                String synonyms = getFormattedSynonyms(results);
+                String examples = getFormattedExamples(results);
+                return definitions + synonyms + examples;
             }
         }).orElse(API_ERROR_MESSAGE);
     }
 
-    private String getFormattedSynonyms(String wordForSearch) {
-        return wordsApiService.executeRequest(SYNONYMS_ENDPOINT, wordForSearch).map(response -> {
-            if (CollectionUtils.isEmpty(response.getSynonyms())) {
-                return Strings.EMPTY;
-            } else {
-                return getFormatted(getFormatted("Synonyms", response.getSynonyms()));
-            }
-        }).orElse(Strings.EMPTY);
+    private String getFormattedSynonyms(List<Result> results) {
+        List<String> synonyms = results.stream()
+                .map(Result::getSynonyms)
+                .filter(Objects::nonNull)
+                .flatMap(Collection::stream)
+                .collect(Collectors.toList());
+
+        if (CollectionUtils.isEmpty(synonyms)) {
+            return Strings.EMPTY;
+        } else {
+            return getFormattedTemplate(buildWordApiTemplate(SYNONYMS_TITLE, synonyms)) + NEXT_LINE;
+        }
     }
 
-    private String getFormattedExamples(String wordForSearch) {
-        return wordsApiService.executeRequest(EXAMPLES_ENDPOINT, wordForSearch).map(response -> {
-            if (CollectionUtils.isEmpty(response.getExamples())) {
-                return Strings.EMPTY;
-            } else {
-                return getFormatted(getFormatted("Examples", response.getExamples()));
-            }
-        }).orElse(Strings.EMPTY);
+    private String getFormattedExamples(List<Result> results) {
+        List<String> examples = results.stream()
+                .map(Result::getExamples)
+                .filter(Objects::nonNull)
+                .flatMap(Collection::stream)
+                .collect(Collectors.toList());
+
+        if (CollectionUtils.isEmpty(examples)) {
+            return Strings.EMPTY;
+        } else {
+            return getFormattedTemplate(buildWordApiTemplate(EXAMPLES_TITLE, examples)) + NEXT_LINE;
+        }
     }
 
     public boolean isResponseValid(String text) {
         return !text.equals(INVALID_WORD) && !text.equals(API_ERROR_MESSAGE);
     }
 
-    private List<String> getPartsOfSpeech(List<WordApiDefinition> definitions) {
+    private List<String> getPartsOfSpeech(List<Result> definitions) {
         Set<String> partsOfSpeechOfCurrentWord = definitions.stream()
-                .map(WordApiDefinition::getPartOfSpeech)
+                .map(Result::getPartOfSpeech)
                 .collect(Collectors.toSet());
 
         List<String> filteredPartsOfSpeech = PartOfSpeech.getTitles();
@@ -83,15 +84,14 @@ public class WordsService {
         return filteredPartsOfSpeech;
     }
 
-    private List<WordApiTemplate> getFormattedDefinitions(List<String> partsOfSpeech, List<WordApiDefinition> definitions) {
+    private List<WordApiTemplate> buildDefinitionsTemplates(List<String> partsOfSpeech, List<Result> results) {
         List<WordApiTemplate> templates = new ArrayList<>();
-        List<WordApiDefinition> fulfilledDefinitions = fillMissingPartOfSpeech(definitions);
         for (String partOfSpeech : partsOfSpeech) {
             WordApiTemplate template = new WordApiTemplate();
             template.setTitle(partOfSpeech);
-            List<String> points = fulfilledDefinitions.stream()
-                    .filter(wordApiDefinition -> wordApiDefinition.getPartOfSpeech().equals(partOfSpeech))
-                    .map(WordApiDefinition::getDefinition)
+            List<String> points = results.stream()
+                    .filter(result -> result.getPartOfSpeech().equals(partOfSpeech))
+                    .map(Result::getDefinition)
                     .collect(Collectors.toList());
             template.addPoints(points);
             templates.add(template);
@@ -99,19 +99,20 @@ public class WordsService {
         return templates;
     }
 
-    private WordApiTemplate getFormatted(String title, List<String> points) {
+    private WordApiTemplate buildWordApiTemplate(String title, List<String> points) {
         return new WordApiTemplate()
                 .setTitle(title)
                 .addPoints(points);
     }
 
-    private String getFormatted(List<WordApiTemplate> templates) {
-        return templates.stream()
-                .map(this::getFormatted)
+    private String getFormattedDefinitions(List<WordApiTemplate> templates) {
+        String joinedDefinitions = templates.stream()
+                .map(this::getFormattedTemplate)
                 .collect(Collectors.joining(NEXT_LINE));
+        return joinedDefinitions + NEXT_LINE;
     }
 
-    private String getFormatted(WordApiTemplate template) {
+    private String getFormattedTemplate(WordApiTemplate template) {
         StringBuilder stringBuilder = new StringBuilder();
         for (String point : template.getPoints()) {
             stringBuilder.append("- ");
@@ -121,17 +122,17 @@ public class WordsService {
         return "<b>" + StringUtils.capitalize(template.getTitle()) + "</b>" + NEXT_LINE + stringBuilder.toString();
     }
 
-    private List<WordApiDefinition> fillMissingPartOfSpeech(List<WordApiDefinition> definitions) {
-        return definitions.stream()
-                .map(this::setOtherPartOfSpeech)
+    private List<Result> fillMissingPartOfSpeech(List<Result> results) {
+        return results.stream()
+                .map(this::setOtherPartOfSpeechIfRequired)
                 .collect(Collectors.toList());
     }
 
-    private WordApiDefinition setOtherPartOfSpeech(WordApiDefinition definition) {
-        if (StringUtils.isEmpty(definition.getPartOfSpeech())) {
-            definition.setPartOfSpeech(OTHER.getTitle());
+    private Result setOtherPartOfSpeechIfRequired(Result result) {
+        if (StringUtils.isEmpty(result.getPartOfSpeech())) {
+            result.setPartOfSpeech(OTHER.getTitle());
         }
-        return definition;
+        return result;
     }
 
 }
