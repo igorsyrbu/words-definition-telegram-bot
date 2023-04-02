@@ -14,7 +14,7 @@ import java.util.Optional;
 public class DisabledTextToSpeechService implements TextToSpeechService {
 
     @PostConstruct
-    public void init(){
+    public void init() {
         log.info("Text to speech service is disabled");
     }
 

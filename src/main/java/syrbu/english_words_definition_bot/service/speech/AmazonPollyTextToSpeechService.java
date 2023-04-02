@@ -21,7 +21,7 @@ public class AmazonPollyTextToSpeechService implements TextToSpeechService {
     private final Voice voice;
 
     @PostConstruct
-    public void init(){
+    public void init() {
         log.info("Amazon Polly text to speech service has been initialized");
     }
 

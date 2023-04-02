@@ -65,7 +65,9 @@ public class BotService {
             buildNotification(adminChatId, update, NotificationType.SUGGESTION).ifPresent(telegramBot::sendMessage);
         } else {
             String text = wordsService.getFormattedMessage(getMessage(update));
-            telegramBot.sendMessage(chatId, text);
+            String textWithPraiseToUkraine = getTextWithPraiseToUkraine(text);
+
+            telegramBot.sendMessage(chatId, textWithPraiseToUkraine);
             if (wordsService.isResponseValid(text)) {
                 String fileName = getMessage(update).toLowerCase();
                 textToSpeechService.synthesize(fileName).ifPresent(inputStream -> telegramBot.sendVoice(chatId, inputStream, fileName));
@@ -73,5 +75,11 @@ public class BotService {
             InMemoryUserState.updateState(chatId, BotCommand.DEFINITION);
             buildNotification(adminChatId, update, NotificationType.DEFINITION).ifPresent(telegramBot::sendMessage);
         }
+    }
+
+    private String getTextWithPraiseToUkraine(String text) {
+        String space = wordsService.isResponseValid(text) ? "" : "\n\n";
+        return text + space +
+                "Слава Україні! \uD83C\uDDFA\uD83C\uDDE6";
     }
 }

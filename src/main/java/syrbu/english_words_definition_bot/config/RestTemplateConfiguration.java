@@ -3,12 +3,8 @@ package syrbu.english_words_definition_bot.config;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.apache.http.conn.ssl.NoopHostnameVerifier;
-import org.apache.http.impl.client.CloseableHttpClient;
-import org.apache.http.impl.client.HttpClients;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.http.client.HttpComponentsClientHttpRequestFactory;
 import org.springframework.http.converter.ByteArrayHttpMessageConverter;
 import org.springframework.http.converter.ResourceHttpMessageConverter;
 import org.springframework.http.converter.StringHttpMessageConverter;
@@ -24,13 +20,7 @@ public class RestTemplateConfiguration {
 
     @Bean
     public RestTemplate restTemplate() {
-        CloseableHttpClient httpClient = HttpClients.custom()
-                .setSSLHostnameVerifier(NoopHostnameVerifier.INSTANCE)
-                .build();
-        HttpComponentsClientHttpRequestFactory requestFactory = new HttpComponentsClientHttpRequestFactory();
-        requestFactory.setHttpClient(httpClient);
-
-        final RestTemplate restTemplate = new RestTemplate(requestFactory);
+        final RestTemplate restTemplate = new RestTemplate();
         restTemplate.setMessageConverters(Arrays.asList(
                 new ByteArrayHttpMessageConverter(),
                 new StringHttpMessageConverter(),
@@ -38,7 +28,7 @@ public class RestTemplateConfiguration {
                 new SourceHttpMessageConverter<>(),
                 new AllEncompassingFormHttpMessageConverter(),
                 new MappingJackson2HttpMessageConverter(objectMapper())));
-        return new RestTemplate(requestFactory);
+        return restTemplate;
     }
 
     @Bean
